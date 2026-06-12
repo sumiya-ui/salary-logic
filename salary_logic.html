@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>給与ロジック シミュレーター</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: #f7f6f3;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 2rem; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    border: 0.5px solid #e0ddd6;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .slider-row label {
+    font-size: 13px;
+    color: #555;
+    min-width: 160px;
+  }
+  .slider-row input[type=range] {
+    flex: 1;
+    accent-color: #1d9e75;
+    height: 4px;
+    cursor: pointer;
+  }
+  .slider-val {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 72px;
+    text-align: right;
+    color: #1a1a1a;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .card {
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .card .clabel { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .card .cval { font-size: 20px; font-weight: 600; }
+  .card-target { background: #E1F5EE; }
+  .card-target .cval { color: #0F6E56; }
+  .card-max { background: #FAEEDA; }
+  .card-max .cval { color: #854F0B; }
+  .card-salary { background: #f2f1ee; }
+  .card-salary .cval { color: #333; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    padding: 7px 10px;
+    background: #f7f6f3;
+    font-weight: 600;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.03em;
+  }
+  td { padding: 8px 10px; border-top: 0.5px solid #ece9e3; }
+  tr:hover td { background: #fafaf8; }
+  .row-current td { background: #f0faf6 !important; font-weight: 600; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-ok { background: #E1F5EE; color: #0F6E56; }
+  .tag-warn { background: #FAEEDA; color: #854F0B; }
+  .tag-ng { background: #FCEBEB; color: #A32D2D; }
+
+  .ok { color: #0F6E56; font-weight: 600; }
+  .ng { color: #A32D2D; font-weight: 600; }
+
+  .bar-section { margin-top: 0.5rem; }
+  .bar-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .bar-wrap {
+    display: flex;
+    height: 22px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f0faf6;
+    border: 0.5px solid #9FE1CB;
+  }
+  .bar-cost { background: #1d9e75; transition: width 0.25s; }
+  .bar-note { font-size: 12px; color: #666; margin-top: 4px; }
+  .legend { display: flex; gap: 14px; margin-bottom: 6px; font-size: 12px; color: #888; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  .note { font-size: 12px; color: #888; margin-bottom: 10px; }
+  footer { text-align: center; font-size: 12px; color: #bbb; margin-top: 2rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>給与ロジック シミュレーター</h1>
+  <p class="subtitle">スライダーを動かして、自分の月給に必要な売上・商談数を確認しよう</p>
+
+  <div class="panel">
+    <div class="panel-title">パラメーター設定</div>
+    <div class="slider-row">
+      <label>月給</label>
+      <input type="range" id="salary" min="20" max="100" step="1" value="40">
+      <span class="slider-val"><span id="salaryVal">40</span>万円</span>
+    </div>
+    <div class="slider-row">
+      <label>1商談あたりの金額</label>
+      <input type="range" id="deal" min="5" max="100" step="5" value="10">
+      <span class="slider-val"><span id="dealVal">10</span>万円</span>
+    </div>
+    <div class="slider-row">
+      <label>目標原価率</label>
+      <input type="range" id="targetRate" min="10" max="40" step="1" value="25">
+      <span class="slider-val"><span id="targetRateVal">25</span>%</span>
+    </div>
+    <div class="slider-row">
+      <label>上限原価率（警戒ライン）</label>
+      <input type="range" id="maxRate" min="20" max="50" step="1" value="30">
+      <span class="slider-val"><span id="maxRateVal">30</span>%</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">① この給与に必要な売上</div>
+    <div class="cards" id="cards1"></div>
+    <div class="bar-section">
+      <div class="legend">
+        <span><span class="dot" style="background:#1d9e75"></span>人件費（給与）</span>
+        <span><span class="dot" style="background:#9FE1CB"></span>粗利</span>
+      </div>
+      <div class="bar-label" id="barLabel"></div>
+      <div class="bar-wrap">
+        <div class="bar-cost" id="barCost" style="width:25%"></div>
+      </div>
+      <div class="bar-note" id="barNote"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">② 商談回数の内訳（月あたり）</div>
+    <table>
+      <thead><tr><th>原価率</th><th>必要売上</th><th>必要商談数</th><th>判定</th></tr></thead>
+      <tbody id="dealTbody"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">③ 給与別シミュレーション表</div>
+    <p class="note" id="simNote"></p>
+    <table>
+      <thead><tr><th>月給</th><th>目標売上</th><th>必要商談数</th><th>上限売上</th><th>上限商談数</th></tr></thead>
+      <tbody id="simTbody"></tbody>
+    </table>
+  </div>
+
+  <footer>社内資料 — 数値はスライダーで自由に変更できます</footer>
+</div>
+
+<script>
+function fmt(n) { return Math.round(n * 10) / 10; }
+
+function update() {
+  const salary = +document.getElementById('salary').value;
+  const deal = +document.getElementById('deal').value;
+  const targetRate = +document.getElementById('targetRate').value / 100;
+  const maxRate = +document.getElementById('maxRate').value / 100;
+
+  document.getElementById('salaryVal').textContent = salary;
+  document.getElementById('dealVal').textContent = deal;
+  document.getElementById('targetRateVal').textContent = Math.round(targetRate * 100);
+  document.getElementById('maxRateVal').textContent = Math.round(maxRate * 100);
+
+  const targetSales = fmt(salary / targetRate);
+  const maxSales = fmt(salary / maxRate);
+  const targetDeals = Math.ceil(targetSales / deal);
+  const maxDeals = Math.ceil(maxSales / deal);
+
+  document.getElementById('cards1').innerHTML = `
+    <div class="card card-target"><div class="clabel">目標売上（原価率${Math.round(targetRate*100)}%）</div><div class="cval">${targetSales}万円</div></div>
+    <div class="card card-max"><div class="clabel">上限売上（原価率${Math.round(maxRate*100)}%）</div><div class="cval">${maxSales}万円</div></div>
+    <div class="card card-salary"><div class="clabel">月給</div><div class="cval">${salary}万円</div></div>
+  `;
+
+  const pct = fmt(salary / targetSales * 100);
+  document.getElementById('barLabel').textContent = `目標売上 ${targetSales}万円 のとき — 原価率 ${pct}%`;
+  document.getElementById('barCost').style.width = Math.min(pct, 100) + '%';
+  document.getElementById('barNote').textContent = `給与 ${salary}万円 ÷ 売上 ${targetSales}万円 = ${pct}%（目標 ${Math.round(targetRate*100)}%）`;
+
+  const rows = [
+    { label: `目標 ${Math.round(targetRate*100)}%`, sales: targetSales, deals: targetDeals, tag: 'ok' },
+    { label: `上限 ${Math.round(maxRate*100)}%`, sales: maxSales, deals: maxDeals, tag: 'warn' },
+    { label: `超過 ${Math.round((maxRate+0.05)*100)}%`, sales: fmt(salary/(maxRate+0.05)), deals: Math.ceil(salary/(maxRate+0.05)/deal), tag: 'ng' },
+  ];
+  const tagLabel = { ok: '目標', warn: '上限', ng: '超過' };
+  document.getElementById('dealTbody').innerHTML = rows.map(r =>
+    `<tr><td>${r.label}</td><td>${r.sales}万円</td><td>${r.deals}回</td><td><span class="tag tag-${r.tag}">${tagLabel[r.tag]}</span></td></tr>`
+  ).join('');
+
+  document.getElementById('simNote').textContent =
+    `商談単価 ${deal}万円・目標原価率 ${Math.round(targetRate*100)}%・警戒ライン ${Math.round(maxRate*100)}% のとき`;
+
+  const salaries = [20, 25, 30, 35, 40, 50, 60, 70, 80, 100];
+  document.getElementById('simTbody').innerHTML = salaries.map(s => {
+    const tS = fmt(s / targetRate);
+    const mS = fmt(s / maxRate);
+    const tD = Math.ceil(tS / deal);
+    const mD = Math.ceil(mS / deal);
+    const cls = s === salary ? 'row-current' : '';
+    return `<tr class="${cls}">
+      <td>${s}万円${s === salary ? ' ◀' : ''}</td>
+      <td>${tS}万円</td>
+      <td class="ok">${tD}回</td>
+      <td>${mS}万円</td>
+      <td class="ng">${mD}回</td>
+    </tr>`;
+  }).join('');
+}
+
+['salary','deal','targetRate','maxRate'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update);
+});
+update();
+</script>
+</body>
+</html>
